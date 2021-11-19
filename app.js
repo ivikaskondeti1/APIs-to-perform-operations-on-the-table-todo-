@@ -122,6 +122,60 @@ const validateRequestBody = (request, response, next) => {
     console.log(`Invalid Todo Status`);
   }
 };
+
+const validatePutRequestBody = (request, response, next) => {
+  const {
+    status = null,
+    priority = null,
+    category = null,
+    dueDate = null,
+  } = request.body;
+  if (
+    status == `TO DO` ||
+    status == `IN PROGRESS` ||
+    status == `DONE` ||
+    status == null
+  ) {
+    if (
+      priority == "HIGH" ||
+      priority == "MEDIUM" ||
+      priority == "LOW" ||
+      priority == null
+    ) {
+      if (
+        category == "WORK" ||
+        category == "HOME" ||
+        category == "LEARNING" ||
+        category == null
+      ) {
+        if (dueDate == null) {
+          next();
+        } else {
+          let validateDa = validatedate(dueDate);
+          if (validateDa) {
+            next();
+          } else {
+            response.status(400);
+            response.send(`Invalid Due Date`);
+            console.log(`Invalid Date MW function`);
+          }
+        }
+      } else {
+        response.status(400);
+        response.send(`Invalid Todo Category`);
+        console.log(`Invalid Todo Category`);
+      }
+    } else {
+      response.status(400);
+      response.send("Invalid Todo Priority");
+      console.log(`Invalid Todo Priority`);
+    }
+  } else {
+    response.status(400);
+    response.send(`Invalid Todo Status`);
+    console.log(`Invalid Todo Status`);
+  }
+};
 //
 app.get("/todos/", validateQueryParams, async (request, response) => {
   const {
@@ -186,68 +240,73 @@ app.post("/todos/", validateRequestBody, async (request, response) => {
 });
 
 //PUT method on TODO
-app.put("/todos/:todoId/", validateRequestBody, async (Request, Response) => {
-  const { todoId } = Request.params;
-  const RequestBody = Request.body;
-  const {
-    status = undefined,
-    priority = undefined,
-    todo = undefined,
-    category = undefined,
-    dueDate = undefined,
-  } = RequestBody;
-  const dateStr = dueDate.split("-");
-  const formattedDate = format(
-    new Date(dateStr[0], parseInt(dateStr[1]) - 1, dateStr[2]),
-    "yyyy-MM-dd"
-  );
-  if (status !== undefined) {
-    const DBquery = `
+app.put(
+  "/todos/:todoId/",
+  validatePutRequestBody,
+  async (Request, Response) => {
+    const { todoId } = Request.params;
+    const RequestBody = Request.body;
+    const {
+      status = undefined,
+      priority = undefined,
+      todo = undefined,
+      category = undefined,
+      dueDate = undefined,
+    } = RequestBody;
+
+    if (status !== undefined) {
+      const DBquery = `
 UPDATE
       todo
     SET
       status='${status}'
       WHERE id=${todoId};`;
-    const DBresponce = await Dbobj.run(DBquery);
-    Response.send("Status Updated");
-  } else if (priority !== undefined) {
-    const DBquery = `
+      const DBresponce = await Dbobj.run(DBquery);
+      Response.send("Status Updated");
+    } else if (priority !== undefined) {
+      const DBquery = `
 UPDATE
       todo
     SET
       priority='${priority}'
       WHERE id=${todoId};`;
-    const DBresponce = await Dbobj.run(DBquery);
-    Response.send("Priority Updated");
-  } else if (todo !== undefined) {
-    const DBquery = `
+      const DBresponce = await Dbobj.run(DBquery);
+      Response.send("Priority Updated");
+    } else if (todo !== undefined) {
+      const DBquery = `
 UPDATE
       todo
     SET
       todo='${todo}'
       WHERE id=${todoId};`;
-    const DBresponce = await Dbobj.run(DBquery);
-    Response.send("Todo Updated");
-  } else if (category !== undefined) {
-    const DBquery = `
+      const DBresponce = await Dbobj.run(DBquery);
+      Response.send("Todo Updated");
+    } else if (category !== undefined) {
+      const DBquery = `
 UPDATE
       todo
     SET
       category='${category}'
       WHERE id=${todoId};`;
-    const DBresponce = await Dbobj.run(DBquery);
-    Response.send("Category Updated");
-  } else if (dueDate !== undefined) {
-    const DBquery = `
+      const DBresponce = await Dbobj.run(DBquery);
+      Response.send("Category Updated");
+    } else if (dueDate !== undefined) {
+      const dateStr = dueDate.split("-");
+      const formattedDate = format(
+        new Date(dateStr[0], parseInt(dateStr[1]) - 1, dateStr[2]),
+        "yyyy-MM-dd"
+      );
+      const DBquery = `
 UPDATE
       todo
     SET
       due_date='${formattedDate}'
       WHERE id=${todoId};`;
-    const DBresponce = await Dbobj.run(DBquery);
-    Response.send("Due Date Updated");
+      const DBresponce = await Dbobj.run(DBquery);
+      Response.send("Due Date Updated");
+    }
   }
-});
+);
 
 //delete Api
 app.delete("/todos/:todoId/", async (request, response) => {
@@ -259,7 +318,6 @@ app.delete("/todos/:todoId/", async (request, response) => {
   //console.log(request.username);
   response.send(`Todo Deleted`);
 });
-module.exports = app;
 
 function validatedate(dateString) {
   let dateformat = /^(19[0-9]{2}|2[0-9]{3})-(0?[1-9]|1[0-2])-([123]0|[012][1-9]|31)$/;
@@ -304,3 +362,4 @@ function validatedate(dateString) {
 }
 //var a = validatedate("2022-12-31");
 //console.log(a);
+module.exports = app;
